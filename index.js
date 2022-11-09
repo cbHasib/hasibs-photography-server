@@ -714,6 +714,30 @@ app.get("/contact-form", async (req, res) => {
   }
 });
 
+// Single Contact Form Data (GET)
+app.get("/contact-form/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const data = await ContactForm.findOne({ _id: ObjectId(id) });
+    if (data) {
+      res.send({
+        success: true,
+        data: data,
+      });
+    } else {
+      res.send({
+        success: false,
+        error: "No data found",
+      });
+    }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 // Marks as Solved Contact (Patch)
 app.patch("/solved-contact/:id", async (req, res) => {
   try {
