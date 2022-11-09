@@ -491,6 +491,171 @@ app.post("/add-new-blog", async (req, res) => {
   }
 });
 
+// Service Collection on MongoDB
+const Services = db.collection("services");
+
+// Service Data Send (GET)
+app.get("/services", async (req, res) => {
+  try {
+    if (req.query.page && req.query.limit) {
+      const page = Number(req.query.page);
+      const limit = Number(req.query.limit);
+      const skip = (page - 1) * limit;
+      const cursor = Services.find({}).skip(skip).limit(limit);
+      const data = await cursor.toArray();
+      if (data.length === 0) {
+        res.send({
+          success: false,
+          error: "No Service found",
+          data: [],
+        });
+        return;
+      }
+      res.send({
+        success: true,
+        data: data,
+      });
+    } else {
+      const cursor = Services.find({});
+      const data = await cursor.toArray();
+      if (data.length === 0) {
+        res.send({
+          success: false,
+          error: "No Service found",
+          data: [],
+        });
+        return;
+      }
+      res.send({
+        success: true,
+        data: data,
+      });
+    }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Service Data Update - Needed Data From Mongo (GET)
+app.get("/service-count", async (req, res) => {
+  try {
+    const count = await Services.estimatedDocumentCount();
+    res.send({
+      success: true,
+      data: count,
+    });
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Service Data Update (PUT)
+app.put("/service-update/:id", async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: ObjectId(id) };
+
+  const newServices = {
+    $set: req.body,
+  };
+
+  const option = { upsert: true };
+
+  const result = await Services.updateOne(query, newServices, option);
+
+  if (result.acknowledged && result.modifiedCount > 0) {
+    res.send({
+      success: true,
+      message: "Successfully Update!",
+    });
+  } else {
+    res.send({
+      success: false,
+      error: "Something went wrong!",
+    });
+  }
+});
+
+// Single Service Details Data Send (GET)
+app.get("/service/:id", async (req, res) => {
+  const id = req.params.id;
+
+  try {
+    const data = await Services.findOne({ _id: ObjectId(id) });
+    if (!data) {
+      res.send({
+        success: false,
+        error: "No Service found",
+        data: {},
+      });
+      return;
+    }
+    res.send({
+      success: true,
+      data: data,
+    });
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Add Single Service (POST)
+app.post("/add-new-service", async (req, res) => {
+  try {
+    const result = await Services.insertOne(req.body);
+    if (result.acknowledged && result.insertedId) {
+      res.send({
+        success: true,
+        message: "Successfully Added Service",
+      });
+    } else {
+      res.send({
+        success: false,
+        error: "Something went wrong!",
+      });
+    }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Delete a service (DELETE)
+app.delete("/delete-service/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+
+    const result = await Services.deleteOne({ _id: ObjectId(id) });
+
+    if (result.acknowledged && result.deletedCount > 0) {
+      res.send({
+        success: true,
+        message: "Successfully deleted service.",
+      });
+    } else {
+      res.send({
+        success: false,
+        error: "Something went wrong!",
+      });
+    }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on port: ${port}`);
 });
