@@ -771,12 +771,8 @@ app.patch("/solved-contact/:id", async (req, res) => {
 const bookForm = db.collection("bookingForm");
 app.post("/booking-form", async (req, res) => {
   try {
-    const { name, email, subject, message } = req.body;
     const newData = {
-      name,
-      email,
-      subject,
-      message,
+      ...req.body,
       bookingDate: new Date(),
       resolved: false,
     };
@@ -785,12 +781,13 @@ app.post("/booking-form", async (req, res) => {
     if (result.acknowledged && result.insertedId) {
       res.send({
         success: true,
-        message: "We received your message. We will contact you soon.",
+        message:
+          "We received your booking information. We will contact you soon.",
       });
     } else {
       res.send({
         success: false,
-        error: "Message not sent, please try again later.",
+        error: "Message mail sent, please try again later.",
       });
     }
   } catch (error) {
