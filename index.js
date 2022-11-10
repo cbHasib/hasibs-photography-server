@@ -1183,7 +1183,7 @@ app.get("/my-reviews", verifyJWT, async (req, res) => {
       } else {
         res.send({
           success: false,
-          error: "No data found",
+          error: "No reviews were added",
         });
       }
       return;
@@ -1198,7 +1198,7 @@ app.get("/my-reviews", verifyJWT, async (req, res) => {
     } else {
       res.send({
         success: false,
-        error: "No data found",
+        error: "No reviews were added",
       });
     }
   } catch (error) {
