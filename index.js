@@ -1004,8 +1004,46 @@ app.get("/reviews/:id", async (req, res) => {
   try {
     const id = req.params.id;
     const cursor = Reviews.find({ serviceId: id });
-    const data = await await cursor.toArray();
 
+    if (req.query.sort === "desc" && req.query.limit && req.query.page) {
+      const limit = Number(req.query.limit);
+      const page = Number(req.query.page);
+      const skip = (page - 1) * limit;
+
+      const sorted = cursor.sort({ reviewTime: -1 }).limit(limit).skip(skip);
+      const data = await sorted.toArray();
+      if (data.length > 0) {
+        res.send({
+          success: true,
+          data: data,
+        });
+      } else {
+        res.send({
+          success: false,
+          error: "No data found",
+        });
+      }
+      return;
+    }
+
+    if (req.query.sort === "desc") {
+      const sorted = cursor.sort({ reviewTime: -1 });
+      const data = await sorted.toArray();
+      if (data.length > 0) {
+        res.send({
+          success: true,
+          data: data,
+        });
+      } else {
+        res.send({
+          success: false,
+          error: "No data found",
+        });
+      }
+      return;
+    }
+
+    const data = await cursor.toArray();
     if (data.length > 0) {
       res.send({
         success: true,
@@ -1017,6 +1055,22 @@ app.get("/reviews/:id", async (req, res) => {
         error: "No data found",
       });
     }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Review Count (GET) - Needed Data From Mongo by Service ID
+app.get("/review-count", async (req, res) => {
+  try {
+    const count = await Reviews.estimatedDocumentCount();
+    res.send({
+      success: true,
+      data: count,
+    });
   } catch (error) {
     res.send({
       success: false,
