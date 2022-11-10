@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const { MongoClient, ObjectId } = require("mongodb");
 require("dotenv").config();
+const jwt = require("jsonwebtoken");
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -20,6 +21,25 @@ const client = new MongoClient(
   { useNewUrlParser: true }
 );
 
+function verifyJWT(req, res, next) {
+  const authTokenHeader = req.headers["authorization"];
+  if (!authTokenHeader) {
+    return res.status(401).send({
+      success: false,
+      error: "Unauthorized Access!",
+    });
+  }
+  const token = authTokenHeader.split(" ")[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+    if (err) {
+      res.json({ success: false, error: "You failed to authenticate!" });
+    } else {
+      req.decoded = decoded;
+      next();
+    }
+  });
+}
+
 async function run() {
   try {
     await client.connect();
@@ -29,6 +49,15 @@ async function run() {
   }
 }
 run().catch((err) => console.log(err));
+
+// JWT Sign In
+app.post("/jwt", (req, res) => {
+  const user = req.body;
+  const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+    expiresIn: "1d",
+  });
+  res.send({ token });
+});
 
 // Database on MongoDB
 const db = client.db(`${process.env.DB_NAME}`);
@@ -1024,7 +1053,7 @@ app.get("/average-rating/:id", async (req, res) => {
 });
 
 // Get Review Data by Service ID (GET)
-app.get("/reviews/:id", async (req, res) => {
+app.get("/get-reviews/:id", async (req, res) => {
   try {
     const id = req.params.id;
     const cursor = Reviews.find({ serviceId: id });
@@ -1124,8 +1153,16 @@ app.get("/review-count/:id", async (req, res) => {
 });
 
 // My Review (GET) - by User ID
-app.get("/my-reviews", async (req, res) => {
+app.get("/my-reviews", verifyJWT, async (req, res) => {
   try {
+    const decoded = req.decoded;
+    if (decoded.uid !== req.query.uid) {
+      res.status(403).send({
+        success: false,
+        error: "You are not authorized to access this data",
+      });
+    }
+
     const uid = req.query.uid;
     const cursor = Reviews.find({ uid: uid }).sort({ reviewTime: -1 });
 
