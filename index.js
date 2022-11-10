@@ -767,7 +767,23 @@ app.patch("/solved-contact/:id", async (req, res) => {
   }
 });
 
-// Contact Form Data (POST)
+// Contact Data Update - Needed Data From Mongo (GET)
+app.get("/message-count", async (req, res) => {
+  try {
+    const count = await ContactForm.estimatedDocumentCount();
+    res.send({
+      success: true,
+      data: count,
+    });
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Booking Form Data (POST)
 const bookForm = db.collection("bookingForm");
 app.post("/booking-form", async (req, res) => {
   try {
@@ -790,6 +806,22 @@ app.post("/booking-form", async (req, res) => {
         error: "Message mail sent, please try again later.",
       });
     }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Service Data Update - Needed Data From Mongo (GET)
+app.get("/booking-count", async (req, res) => {
+  try {
+    const count = await bookForm.estimatedDocumentCount();
+    res.send({
+      success: true,
+      data: count,
+    });
   } catch (error) {
     res.send({
       success: false,
@@ -865,6 +897,124 @@ app.patch("/solved-booking/:id", async (req, res) => {
       res.send({
         success: false,
         error: "Something went wrong!",
+      });
+    }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Review Collection
+const Reviews = db.collection("reviews");
+// All Review Data Send (GET)
+app.get("/reviews", async (req, res) => {
+  try {
+    if (req.query.sort === "desc") {
+      const cursor = Reviews.find({}).sort({ reviewTime: -1 });
+      const data = await cursor.toArray();
+      if (data.length > 0) {
+        res.send({
+          success: true,
+          data: data,
+        });
+      } else {
+        res.send({
+          success: false,
+          error: "No data found",
+        });
+      }
+      return;
+    }
+
+    const cursor = Reviews.find({});
+    const data = await cursor.toArray();
+    if (data.length > 0) {
+      res.send({
+        success: true,
+        data: data,
+      });
+    } else {
+      res.send({
+        success: false,
+        error: "No data found",
+      });
+    }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Add New Review (POST)
+app.post("/add-review", async (req, res) => {
+  try {
+    const data = req.body;
+    const result = await Reviews.insertOne(data);
+
+    if (result.acknowledged && result.insertedId) {
+      res.send({
+        success: true,
+        message: "Successfully Added Review",
+      });
+    } else {
+      res.send({
+        success: false,
+        error: "Something went wrong!",
+      });
+    }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Review Count (GET) - Needed Data From Mongo by Service ID
+app.get("/average-rating/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const count = await Reviews.countDocuments({ serviceId: id });
+    const data = await Reviews.find({ serviceId: id }).toArray();
+    let totalRating = 0;
+    data.forEach((item) => {
+      totalRating += item.rating;
+    });
+    const averageRating = parseFloat((totalRating / count).toFixed(1));
+
+    res.send({
+      success: true,
+      data: averageRating,
+    });
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Get Review Data by Service ID (GET)
+app.get("/reviews/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const cursor = Reviews.find({ serviceId: id });
+    const data = await await cursor.toArray();
+
+    if (data.length > 0) {
+      res.send({
+        success: true,
+        data: data,
+      });
+    } else {
+      res.send({
+        success: false,
+        error: "No data found",
       });
     }
   } catch (error) {
