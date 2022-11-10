@@ -530,7 +530,10 @@ app.get("/services", async (req, res) => {
       const page = Number(req.query.page);
       const limit = Number(req.query.limit);
       const skip = (page - 1) * limit;
-      const cursor = Services.find({}).skip(skip).limit(limit);
+      const cursor = Services.find({})
+        .sort({ _id: -1 })
+        .skip(skip)
+        .limit(limit);
       const data = await cursor.toArray();
       if (data.length === 0) {
         res.send({
