@@ -1079,6 +1079,26 @@ app.get("/review-count", async (req, res) => {
   }
 });
 
+// Review Count (GET) - Needed Data From Mongo by Service ID
+app.get("/review-count/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const count = await Reviews.find({
+      serviceId: id,
+    }).toArray();
+    const data = count.length;
+    res.send({
+      success: true,
+      data: data,
+    });
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on port: ${port}`);
 });
