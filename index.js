@@ -950,6 +950,30 @@ app.get("/reviews", async (req, res) => {
   }
 });
 
+// Get Single Review Data (GET)
+app.get("/reviews/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const data = await Reviews.findOne({ _id: ObjectId(id) });
+    if (data) {
+      res.send({
+        success: true,
+        data: data,
+      });
+    } else {
+      res.send({
+        success: false,
+        error: "No data found",
+      });
+    }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
 // Add New Review (POST)
 app.post("/add-review", async (req, res) => {
   try {
@@ -1091,6 +1115,108 @@ app.get("/review-count/:id", async (req, res) => {
       success: true,
       data: data,
     });
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// My Review (GET) - by User ID
+app.get("/my-reviews", async (req, res) => {
+  try {
+    const uid = req.query.uid;
+    const cursor = Reviews.find({ uid: uid }).sort({ reviewTime: -1 });
+
+    if (req.query.limit && req.query.page && uid) {
+      const limit = Number(req.query.limit);
+      const page = Number(req.query.page);
+      const skip = (page - 1) * limit;
+      const sorted = cursor.limit(limit).skip(skip);
+      const data = await sorted.toArray();
+      if (data.length > 0) {
+        res.send({
+          success: true,
+          data: data,
+        });
+      } else {
+        res.send({
+          success: false,
+          error: "No data found",
+        });
+      }
+      return;
+    }
+
+    const data = await cursor.toArray();
+    if (data.length > 0) {
+      res.send({
+        success: true,
+        data: data,
+      });
+    } else {
+      res.send({
+        success: false,
+        error: "No data found",
+      });
+    }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Delete Review by UID (DELETE)
+app.delete("/delete-review/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const result = await Reviews.deleteOne({ _id: ObjectId(id) });
+    if (result.deletedCount > 0) {
+      res.send({
+        success: true,
+        message: "Successfully Deleted Review",
+      });
+    } else {
+      res.send({
+        success: false,
+        error: "Something went wrong!",
+      });
+    }
+  } catch (error) {
+    res.send({
+      success: false,
+      error: error.message,
+    });
+  }
+});
+
+// Update Review by reviewID (Patch)
+app.patch("/update-review/:id", async (req, res) => {
+  try {
+    const id = req.params.id;
+    const result = await Reviews.updateOne(
+      { _id: ObjectId(id) },
+      {
+        $set: {
+          rating: req.body.rating,
+          review: req.body.review,
+        },
+      }
+    );
+    if (result.modifiedCount > 0) {
+      res.send({
+        success: true,
+        message: "Successfully Updated Review",
+      });
+    } else {
+      res.send({
+        success: false,
+        error: "Something went wrong!",
+      });
+    }
   } catch (error) {
     res.send({
       success: false,
